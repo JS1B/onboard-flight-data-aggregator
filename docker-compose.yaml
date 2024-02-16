@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: ofda-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/lib/ofda:/var/lib/ofda
+    depends_on:
+      - grafana
+
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    restart: always
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb-data:/var/lib/ofda/influxdb
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpass
+      - DOCKER_INFLUXDB_INIT_ORG=ofda
+      - DOCKER_INFLUXDB_INIT_BUCKET=telegraf
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=5BIXNzc2rjlGjiCN9IPy51OimZeL9dj106UJPoHlWg8L5i1GmZ6f99VE56zw-cBcmb3PVAEYSyt9AUi7tMirsw==
+
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
+    restart: always
+    ports:
+      - "8125:8125"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      - influxdb
+    links:
+      - influxdb
+
+  # kapacitor:
+  #   image: kapacitor:latest
+  #   container_name: kapacitor
+  #   restart: always
+  #   ports:
+  #     - "9092:9092"
+  #   volumes:
+  #     - /var/lib/ofda/kapacitor:/var/lib/ofda/kapacitor
+  #     - /etc/localtime:/etc/localtime:ro
+  #   environment:
+  #     - KAPACITOR_HOSTNAME=influxdb
+  #     - KAPACITOR_LOGGING_LEVEL=INFO
+  #     - KAPACITOR_REPORTING_ENABLED=false
+  #     - KAPACITOR_INFLUXDB_0_URLS_0=http://influxdb:8086
+  #   depends_on:
+  #     - influxdb
+  #   links:
+  #     - influxdb
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/ofda/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=
+      - GF_LOG_LEVEL=INFO # DEBUG, INFO
+    depends_on:
+      - influxdb
+    links:
+      - influxdb
+
+volumes:
+  influxdb-data: {}
+  grafana-data: {}
