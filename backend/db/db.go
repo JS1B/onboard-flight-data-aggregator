@@ -4,8 +4,8 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	_ "modernc.org/sqlite" // Import go-sqlite3 library
@@ -13,7 +13,7 @@ import (
 
 type User struct {
 	ID           int
-	Username     string
+	Username     *string
 	Email        string
 	PasswordHash string
 	CreationTime time.Time
@@ -46,38 +46,38 @@ func CloseDB() error {
 
 // AddUser adds a new user to the database
 func AddUser(email string, passwordHash string) error {
-	stmt, err := DB.Prepare("INSERT INTO users (email, password_hash) VALUES (?, ?)")
+	query := `INSERT INTO users (email, password_hash) VALUES (?, ?)`
+
+	stmt, err := DB.Prepare(query)
 	if err != nil {
-		return err
+		return fmt.Errorf("error preparing statement: %w", err)
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(email, passwordHash)
 	if err != nil {
-		return err
+		return fmt.Errorf("error executing statement: %w", err)
 	}
 
-	return err
+	return nil
 }
 
 // GetUser retrieves a user by username
-func GetUser(email string) (*User, error) {
+func GetUser(identifier string) (*User, error) {
 	// User struct to hold the data
 	var user User
 
 	// SQL query to select the user by username
-	query := `SELECT id, username, email, password_hash, creation_time FROM users WHERE email = ?`
+	query := `SELECT id, username, email, password_hash, creation_time FROM users WHERE email = ? OR id = ?`
 
-	// Query the database
-	row := DB.QueryRow(query, email)
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.CreationTime)
+	// Execute the query
+	err := DB.QueryRow(query, identifier, identifier).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.CreationTime)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			// No result (not an error in this context)
-			return nil, nil
+			return nil, fmt.Errorf("user not found: %w", err)
 		}
-		log.Printf("Error querying for user by username: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("error querying for user: %w", err)
 	}
 
 	return &user, nil

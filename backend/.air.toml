@@ -4,7 +4,7 @@ tmp_dir = "tmp"
 
 [build]
   cmd = "go build -o ./tmp/main ."
-  delay = 1000 # delay to trigger build (ms)
+  delay = 500 # delay to trigger build (ms)
   exclude_dir = ["assets", "tmp", "vendor", "testdata"]
 
 [log]

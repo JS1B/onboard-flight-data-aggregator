@@ -2,12 +2,15 @@ package main
 
 import (
 	"log"
-	"main/controllers"
-	"main/initializers"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"main/controllers"
+	"main/finalizers"
+	"main/initializers"
+	"main/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,22 +21,32 @@ func init() {
 
 	// Register keyboard interrupt handler
 	registerKeyboardInterruptHandler()
+
+	// Initialize the logger
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	// Log the start of the application
+	log.Println("Starting application...")
+
+	// Set the Gin mode to debug or release
+	if os.Getenv("DEBUG") == "false" {
+		gin.SetMode(gin.ReleaseMode)
+	} else {
+		gin.SetMode(gin.DebugMode)
+	}
 }
 
 func main() {
-	log.Print("Starting server...")
-	gin.SetMode(gin.DebugMode)
-
 	router := gin.Default()
+
 	router.GET("/", homePage)
-
 	router.GET("/status", getStatus)
-
 	router.GET("/view", grafanaRedirect)
+	router.GET("/validate", middleware.RequireAuth, controllers.ValidateToken)
 
 	router.POST("/signup", controllers.Signup)
+	router.POST("/login", controllers.Login)
 
-	log.Println("done.")
 	router.Run(":8080")
 }
 
@@ -64,6 +77,9 @@ func registerKeyboardInterruptHandler() {
 
 		// Log the received signal
 		log.Printf("Received signal: %s. Shutting down...\n", sig)
+
+		// Run the finalizers
+		finalizers.ShutdownDB()
 
 		// Close the channel
 		close(c)
