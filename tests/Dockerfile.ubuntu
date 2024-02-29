@@ -1,0 +1,16 @@
+# Path: tests/Dockerfile.ubuntu
+
+# Use the latest Ubuntu image
+FROM ubuntu:latest
+
+# Copy the scripts
+COPY ./scripts /scripts
+WORKDIR /scripts
+RUN chmod +x *.sh
+
+# Run the install script
+RUN ./install.sh
+
+# Run the run script answering with y
+RUN yes | ./run.sh
+

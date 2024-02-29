@@ -1,0 +1,19 @@
+# Path: tests/Dockerfile.arch
+
+# Use the latest Arch Linux image
+FROM archlinux:latest
+
+# Update the package list
+RUN pacman -Syu --noconfirm
+
+# Copy the scripts
+COPY ./scripts /scripts
+WORKDIR /scripts
+RUN chmod +x *.sh
+
+# Run the install script
+RUN ./install.sh
+
+# Run the run script answering with y
+RUN yes | ./run.sh
+
