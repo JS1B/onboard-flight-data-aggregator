@@ -3,10 +3,23 @@
 # Use the latest Ubuntu image
 FROM ubuntu:latest
 
+# Set the working directory in the container
+WORKDIR /usr/src/scripts
+
 # Copy the scripts
-COPY ./scripts /scripts
-WORKDIR /scripts
-RUN chmod +x *.sh
+COPY ./scripts .
+
+# Copy docker-compose.yml
+COPY ./docker-compose.yaml .
+
+# # Make the scripts executable
+# RUN chmod +x *.sh
+
+# Install dependencies (e.g., curl, sudo, etc.) required by your script
+RUN apt-get update && apt-get install -y \
+    curl \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
 
 # Run the install script
 RUN ./install.sh

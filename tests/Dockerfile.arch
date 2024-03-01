@@ -3,17 +3,24 @@
 # Use the latest Arch Linux image
 FROM archlinux:latest
 
-# Update the package list
-RUN pacman -Syu --noconfirm
+# Set the working directory in the container
+WORKDIR /usr/src/scripts
+
+# Update the package list and install sudo
+RUN pacman -Syu --noconfirm && \
+    pacman -S --noconfirm sudo
 
 # Copy the scripts
-COPY ./scripts /scripts
-WORKDIR /scripts
-RUN chmod +x *.sh
+COPY ./scripts .
+
+# Copy docker-compose.yml
+COPY ./docker-compose.yaml .
+
+# Make the scripts executable
+# RUN chmod +x *.sh
 
 # Run the install script
 RUN ./install.sh
 
 # Run the run script answering with y
 RUN yes | ./run.sh
-
